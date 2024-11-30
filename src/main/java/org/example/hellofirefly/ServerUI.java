@@ -3,88 +3,100 @@ package org.example.hellofirefly;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.layout.GridPane;
-import javafx.scene.text.Text;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import org.apache.thrift.server.TServer;
 import org.apache.thrift.server.TThreadPoolServer;
 import org.apache.thrift.transport.TServerSocket;
 import org.apache.thrift.transport.TServerTransport;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ServerUI extends Application {
 
-    // Map zum Speichern des Zustands jedes Clients
+    private static final int GRID_SIZE = 5; // Größe des Gitters
+    private static final int CELL_SIZE = 50; // Größe der Zellen
     private final ConcurrentHashMap<Integer, Integer> clientStates = new ConcurrentHashMap<>();
-
-    // 3x3 Gitter von Textfeldern
-    private final Text[][] grid = new Text[3][3];
+    private final Rectangle[][] grid = new Rectangle[GRID_SIZE][GRID_SIZE];
 
     @Override
     public void start(Stage primaryStage) {
         GridPane gridPane = new GridPane();
 
-        // Initialisiere das Gitter
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                Text cell = new Text("0");
+        for (int i = 0; i < GRID_SIZE; i++) {
+            for (int j = 0; j < GRID_SIZE; j++) {
+                Rectangle cell = new Rectangle(CELL_SIZE, CELL_SIZE, Color.BLACK);
                 grid[i][j] = cell;
                 gridPane.add(cell, i, j);
             }
         }
 
-        Scene scene = new Scene(gridPane, 300, 300);
+        Scene scene = new Scene(gridPane, GRID_SIZE * CELL_SIZE, GRID_SIZE * CELL_SIZE);
         primaryStage.setTitle("Firefly Server");
         primaryStage.setScene(scene);
         primaryStage.show();
 
-        // Start Thrift Server
         startThriftServer();
     }
 
     private void startThriftServer() {
         new Thread(() -> {
             try {
-                // Thrift-Processor für den FireflyHandler
                 FireflyService.Processor<FireflyHandler> processor = new FireflyService.Processor<>(new FireflyHandler());
-
-                // Server-Transport (Zugangspunkt für Verbindungen)
                 TServerTransport serverTransport = new TServerSocket(9090);
-
-                // Verwende TThreadPoolServer für parallele Client-Verarbeitung
                 TThreadPoolServer.Args serverArgs = new TThreadPoolServer.Args(serverTransport);
                 serverArgs.processor(processor);
                 TServer server = new TThreadPoolServer(serverArgs);
 
                 System.out.println("Server started on port 9090...");
-                server.serve();  // Starte den Server
+                server.serve();
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }).start();
     }
 
-    // Handler für den Thrift-Service
     private class FireflyHandler implements FireflyService.Iface {
         @Override
         public void sendState(int clientId, int state) {
-            // Zustand des Clients speichern
             clientStates.put(clientId, state);
-
-            // Gitter im JavaFX-Thread aktualisieren
-            javafx.application.Platform.runLater(() -> updateGrid());
+            javafx.application.Platform.runLater(ServerUI.this::updateGrid);
         }
 
-        private void updateGrid() {
-            // Gehe durch die Gitterzellen und setze den Zustand des Clients
-            int index = 0;
-            for (int i = 0; i < 3; i++) {
-                for (int j = 0; j < 3; j++) {
-                    // Hole den Zustand des aktuellen Clients, falls vorhanden
-                    int state = clientStates.getOrDefault(index, 0);
-                    grid[i][j].setText(String.valueOf(state));
-                    index++;  // Erhöhe den Index, um die Gitterzellen zu füllen
-                }
+        @Override
+        public List<Integer> getNeighborStates(int gridX, int gridY) {
+            List<Integer> neighbors = new ArrayList<>();
+            int[][] positions = {
+                    {gridX, (gridY + 1) % GRID_SIZE},  // right
+                    {gridX, (gridY - 1 + GRID_SIZE) % GRID_SIZE},  // left
+                    {(gridX + 1) % GRID_SIZE, gridY},  // down
+                    {(gridX - 1 + GRID_SIZE) % GRID_SIZE, gridY},  // up
+                    {(gridX + 1) % GRID_SIZE, (gridY + 1) % GRID_SIZE},  // down-right
+                    {(gridX + 1) % GRID_SIZE, (gridY - 1 + GRID_SIZE) % GRID_SIZE},  // down-left
+                    {(gridX - 1 + GRID_SIZE) % GRID_SIZE, (gridY + 1) % GRID_SIZE},  // up-right
+                    {(gridX - 1 + GRID_SIZE) % GRID_SIZE, (gridY - 1 + GRID_SIZE) % GRID_SIZE}  // up-left
+            };
+
+            for (int[] pos : positions) {
+                int neighborId = pos[0] * GRID_SIZE + pos[1];
+                neighbors.add(clientStates.getOrDefault(neighborId, 0));
+            }
+
+            return neighbors;
+        }
+    }
+
+    private void updateGrid() {
+        int index = 0;
+        for (int i = 0; i < GRID_SIZE; i++) {
+            for (int j = 0; j < GRID_SIZE; j++) {
+                int state = clientStates.getOrDefault(index + 1, 0); // Client IDs sind 1-basiert
+                Color color = state > 0 ? Color.rgb(state, state, 0) : Color.BLACK; // Gelber Farbton basierend auf Zustand
+                grid[i][j].setFill(color);
+                index++;
             }
         }
     }

@@ -9,8 +9,11 @@ public class ClientHandler {
 
     public ClientHandler(int numberOfClients) {
         // Erstelle die Clients
+        int gridSize = (int) Math.sqrt(numberOfClients);
         for (int i = 0; i < numberOfClients; i++) {
-            clients.add(new FireflyClient(i + 1));
+            int gridX = i / gridSize;
+            int gridY = i % gridSize;
+            clients.add(new FireflyClient(i + 1, gridX, gridY));
         }
     }
 
@@ -23,7 +26,7 @@ public class ClientHandler {
 
     public static void main(String[] args) {
         // ClientHandler mit 9 Clients (3x3 Gitter)
-        ClientHandler handler = new ClientHandler(9);
+        ClientHandler handler = new ClientHandler(25);
         handler.startClients();
     }
 }
