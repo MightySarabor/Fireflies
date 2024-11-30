@@ -26,7 +26,7 @@ public class ClientHandler {
 
     public static void main(String[] args) {
         // ClientHandler mit 9 Clients (3x3 Gitter)
-        ClientHandler handler = new ClientHandler(25);
+        ClientHandler handler = new ClientHandler(36);
         handler.startClients();
     }
 }

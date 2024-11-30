@@ -3,8 +3,9 @@ package org.example.hellofirefly;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
+import javafx.scene.shape.Circle;
 import javafx.stage.Stage;
 import org.apache.thrift.server.TServer;
 import org.apache.thrift.server.TThreadPoolServer;
@@ -17,24 +18,28 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ServerUI extends Application {
 
-    private static final int GRID_SIZE = 5; // Größe des Gitters
-    private static final int CELL_SIZE = 50; // Größe der Zellen
+    private static final int GRID_SIZE = 6; // Größe des Gitters
+    private static final int CELL_SIZE = 30; // Größe der Zellen
     private final ConcurrentHashMap<Integer, Integer> clientStates = new ConcurrentHashMap<>();
-    private final Rectangle[][] grid = new Rectangle[GRID_SIZE][GRID_SIZE];
+    private final Circle[][] grid = new Circle[GRID_SIZE][GRID_SIZE];
 
     @Override
     public void start(Stage primaryStage) {
         GridPane gridPane = new GridPane();
+        gridPane.setStyle("-fx-background-color: black;");
 
         for (int i = 0; i < GRID_SIZE; i++) {
             for (int j = 0; j < GRID_SIZE; j++) {
-                Rectangle cell = new Rectangle(CELL_SIZE, CELL_SIZE, Color.BLACK);
+                Circle cell = new Circle(CELL_SIZE / 2, Color.BLACK);
                 grid[i][j] = cell;
                 gridPane.add(cell, i, j);
             }
         }
 
-        Scene scene = new Scene(gridPane, GRID_SIZE * CELL_SIZE, GRID_SIZE * CELL_SIZE);
+        StackPane root = new StackPane(gridPane);
+        root.setStyle("-fx-background-color: black;");
+
+        Scene scene = new Scene(root, GRID_SIZE * CELL_SIZE, GRID_SIZE * CELL_SIZE);
         primaryStage.setTitle("Firefly Server");
         primaryStage.setScene(scene);
         primaryStage.show();
@@ -94,7 +99,7 @@ public class ServerUI extends Application {
         for (int i = 0; i < GRID_SIZE; i++) {
             for (int j = 0; j < GRID_SIZE; j++) {
                 int state = clientStates.getOrDefault(index + 1, 0); // Client IDs sind 1-basiert
-                Color color = state > 0 ? Color.rgb(state, state, 0) : Color.BLACK; // Gelber Farbton basierend auf Zustand
+                Color color = state > 0 ? Color.rgb(0, state, 0) : Color.BLACK; // Grüner Farbton basierend auf Zustand
                 grid[i][j].setFill(color);
                 index++;
             }
