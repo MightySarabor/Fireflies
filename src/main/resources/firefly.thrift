@@ -1,6 +1,6 @@
 namespace java firefly
 
 service FireflyService {
-    void sendPhase(1: double phase, 2: string senderId),
-    double getPhase()
+    void sendState(1: i32 clientId, 2: i32 state),
+    list<i32> getNeighborStates(1: i32 gridX, 2: i32 gridY),
 }
