@@ -14,6 +14,46 @@ Aufleuchtzyklus jedes Glühwürmchens darzustellen.
 
 Die Abgabe den Code der ersten Aufgabe finden Sie im Master-Branch.
 
+### UML-Diagramm
+
+---------------------------------
+|            Torus              |
+---------------------------------
+| - grid: Firefly[][]           |
+| - size: int                   |
+---------------------------------
+| + Torus(size: int)            |
+| + update()                    |
+| + getGrid(): Firefly[][]      |
+| - initializeNeighbors()       |
+---------------------------------
+                ^
+                |
+---------------------------------
+|     FireflySimulation         |
+---------------------------------
+| + start(primaryStage: Stage)  |
+| + main(args: String[])        |
+| - update(rectangles:          |
+|   Rectangle[][])              |
+---------------------------------
+                ^
+                |
+---------------------------------
+|           Firefly             |
+---------------------------------
+| - phase: double               |
+| - neighbors: List<Firefly>    |
+| - isFlashing: boolean         |
+| - flashTimeRemaining: double  |
+| + Firefly()                   |
+| + addNeighbor(neighbor:       |
+|   Firefly)                    |
+| + updatePhase()               |
+| + isFlashing(): boolean       |
+| + getPhase(): double          |
+---------------------------------
+
 ### Die Reise des Glühwürmchens
 
 Die Klasse FireflySimulation bildet das Herzstück des Programms und stellt die Glühwürmchen in einem Grid jeweils als Feld dar, das blinkt oder nicht.
