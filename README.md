@@ -15,55 +15,8 @@ Aufleuchtzyklus jedes Glühwürmchens darzustellen.
 Die Abgabe den Code der ersten Aufgabe finden Sie im Master-Branch.
 
 
-## Aufgabe 2 „Kommunizierende Glühwürmchen“  
 
-In dieser Übung erweitern Sie Ihre Glühwürmchen-Simulation aus Aufgabe 1, indem Sie jedes Glühwürmchen als eigenständiges 
-Programm realisieren, das über ein Netzwerk mit den anderen Glühwürmchen kommuniziert. Ziel ist es, die notwendigen 
-Zustandsinformationen zwischen den einzelnen Glühwürmchen mithilfe eines Kommunikationsprotokolls wie Apache Thrift 
-oder gRPC auszutauschen, um den Synchronisationsprozess zu steuern. Jedes Glühwürmchen fungiert als unabhängiger Prozess 
-und tauscht regelmäßig Statusinformationen mit seinen Nachbarn in der Torus-Anordnung aus, um eine Synchronisation zu 
-erreichen. Wenn Sie die Programmiersprache Java verwenden, ist alternativ auch Java RMI als Kommunikationsmechanismus 
-zulässig. Die Aufgabe besteht darin, die dezentrale Natur der Simulation zu verdeutlichen und sicherzustellen, dass die 
-Glühwürmchen auf Basis der empfangenen Informationen den Synchronisationsprozess wie zuvor initiieren können. 
-
-Für die verteilte Struktur habe ich mir folgdenes überlegt:
-
-Ich habe einen zentralen Server 'ServerUI'. Dann habe ich Die Glühwürmchen, ein Glühwürmchen ist ein 'FireflyClient'. Dann habe ich den 'ClientHandler', dieser startet lediglich die FireflyClients. Und zu guter letzt habe ich mit Apache Thrift einen FireflyService erstellt, der ein Framework für die verteilte Struktur liefert.
-
-Als UML Diagramm sehen die Klassen wie folgt aus:
-
-+------------------+            +-----------------+
-| ClientHandler    |            | FireflyClient   |
-|------------------|            |-----------------|
-| + clients        |<>----------| + id            |
-|                  |            | + gridX         |
-|                  |            | + gridY         |
-|------------------|            | + phase         |
-| + startClients() |            |-----------------|
-| + main()         |            | + run()         |
-+------------------+            | + updatePhase() |
-                                | + phaseToState()|
-+------------------+            | + stateToPhase()|
-| ServerUI         |<>----------| + sendState()   |
-|------------------|            +-----------------+
-| + clientStates   |            
-| + grid           |            
-|------------------|            
-| + start()        |            
-| + startThriftServer() |       
-| + updateGrid()   |            
-+------------------+
-
-+------------------+
-| FireflyService   |
-|------------------|
-| + sendState()    |
-| + getNeighborStates()|
-+------------------+
-
-
-## Die Reise des Glühwürmchens
-Um den Code zu verstehen, betrachten wir den Programmablauf aus der Sicht eines Glühwürmchens. Der FireflyClient startet das Glühwürmchen. Dabei erhält das Glühwürmchen eine eindeutige ID und eine Position im Grid. Diese Position wird später verwendet, um die Nachbarn des Glühwürmchens zu berechnen.
+### Die Reise des Glühwürmchens
 
 Das Glühwürmchen wird mit festen Parametern erstellt, die für die Synchronisation entscheidend sind. Die Phase wird zufällig initialisiert, um Varianz in das Experiment zu bringen:
 
@@ -143,4 +96,103 @@ if (currentPhase < 0) {
 Zum Schluss wird sichergestellt, dass die Phase des Glühwürmchens innerhalb der Grenzen [0, 2π] bleibt. Dies stellt sicher, dass die Phasenwerte immer im gültigen Bereich liegen.
 
 
+## Aufgabe 2 „Kommunizierende Glühwürmchen“  
+
+In dieser Übung erweitern Sie Ihre Glühwürmchen-Simulation aus Aufgabe 1, indem Sie jedes Glühwürmchen als eigenständiges 
+Programm realisieren, das über ein Netzwerk mit den anderen Glühwürmchen kommuniziert. Ziel ist es, die notwendigen 
+Zustandsinformationen zwischen den einzelnen Glühwürmchen mithilfe eines Kommunikationsprotokolls wie Apache Thrift 
+oder gRPC auszutauschen, um den Synchronisationsprozess zu steuern. Jedes Glühwürmchen fungiert als unabhängiger Prozess 
+und tauscht regelmäßig Statusinformationen mit seinen Nachbarn in der Torus-Anordnung aus, um eine Synchronisation zu 
+erreichen. Wenn Sie die Programmiersprache Java verwenden, ist alternativ auch Java RMI als Kommunikationsmechanismus 
+zulässig. Die Aufgabe besteht darin, die dezentrale Natur der Simulation zu verdeutlichen und sicherzustellen, dass die 
+Glühwürmchen auf Basis der empfangenen Informationen den Synchronisationsprozess wie zuvor initiieren können. 
+
+Für die verteilte Struktur habe ich mir folgdenes überlegt:
+
+Ich habe einen zentralen Server 'ServerUI'. Dann habe ich Die Glühwürmchen, ein Glühwürmchen ist ein 'FireflyClient'. Dann habe ich den 'ClientHandler', dieser startet lediglich die FireflyClients. Und zu guter letzt habe ich mit Apache Thrift einen FireflyService erstellt, der ein Framework für die verteilte Struktur liefert.
+
+Als UML Diagramm sehen die Klassen wie folgt aus:
+```
++------------------+            +-----------------+
+| ClientHandler    |            | FireflyClient   |
+|------------------|            |-----------------|
+| + clients        |<>----------| + id            |
+|                  |            | + gridX         |
+|                  |            | + gridY         |
+|------------------|            | + phase         |
+| + startClients() |            |-----------------|
+| + main()         |            | + run()         |
++------------------+            | + updatePhase() |
+                                | + phaseToState()|
++------------------+            | + stateToPhase()|
+| ServerUI         |<>----------+-----------------+
+|------------------|            
+| + clientStates   |            
+| + grid           |            
+|------------------|            
+| + start()        |            
+| + startThriftServer() |       
+| + updateGrid()   |
+| + sendState()    |
+| + getNeighborStates()|            
++------------------+
+      |
+      |Interface
+      |
+      V
++------------------+
+| FireflyService   |
+|------------------|
+| + sendState()    |
+| + getNeighborStates()|
++------------------+
+
+```
+
+
 ### Kommunikation mit dem Server
+
+Für die Kommunikation zwischen Server und Client wurden in Apache Thrift zwei zentrale Methoden definiert:
+
+```java
+namespace java firefly
+
+service FireflyService {
+    void sendState(1: i32 clientId, 2: i32 state),
+    list<i32> getNeighborStates(1: i32 gridX, 2: i32 gridY),
+}```
+Diese Methoden sind notwendig, um den Server über den aktuellen Zustand der Glühwürmchen auf dem Laufenden zu halten und dem Glühwürmchen den Zugriff auf die Zustände seiner Nachbarn zu ermöglichen. Der Server speichert die Zustände der Glühwürmchen in einer ConcurrentHashMap.
+
+```java
+private final ConcurrentHashMap<Integer, Integer> clientStates = new ConcurrentHashMap<>();
+```
+Die Methode getNeighborStates, die vom Glühwürmchen aufgerufen wird, ist im FireflyHandler definiert:
+
+```java
+@Override
+public List<Integer> getNeighborStates(int gridX, int gridY) {
+    List<Integer> neighbors = new ArrayList<>();
+    int[][] positions = {
+        {gridX, (gridY + 1) % GRID_SIZE},  // right
+        {gridX, (gridY - 1 + GRID_SIZE) % GRID_SIZE},  // left
+        {(gridX + 1) % GRID_SIZE, gridY},  // down
+        {(gridX - 1 + GRID_SIZE) % GRID_SIZE, gridY},  // up
+        {(gridX + 1) % GRID_SIZE, (gridY + 1) % GRID_SIZE},  // down-right
+        {(gridX + 1) % GRID_SIZE, (gridY - 1 + GRID_SIZE) % GRID_SIZE},  // down-left
+        {(gridX - 1 + GRID_SIZE) % GRID_SIZE, (gridY + 1) % GRID_SIZE},  // up-right
+        {(gridX - 1 + GRID_SIZE) % GRID_SIZE, (gridY - 1 + GRID_SIZE) % GRID_SIZE}  // up-left
+    };
+```
+In dieser Methode werden die Positionen der Nachbarn des Glühwürmchens basierend auf gridX und gridY berechnet, einschließlich diagonaler Nachbarn. Diese Positionen werden dann verwendet, um die IDs der Nachbarn zu ermitteln.
+
+Nach jeder Phasenberechnung aktualisiert das Glühwürmchen seine Werte mithilfe der Methode sendState, um die Zustände aktuell zu halten.
+
+```java
+for (int[] pos : positions) {
+    int neighborId = pos[0] * GRID_SIZE + pos[1];
+    neighbors.add(clientStates.getOrDefault(neighborId, 0));
+}
+return neighbors;
+}
+```
+Im letzten Schritt der Methode getNeighborStates wird die Liste neighbors mit den Zuständen der Nachbarn gefüllt. Diese Zustände werden vom Glühwürmchen mit getNeighborStates abgefragt, um die eigene Phase basierend auf den Zuständen der Nachbarn anzupassen.
