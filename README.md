@@ -1,4 +1,4 @@
-#Softwarearchitektur für Enterprises
+# Softwarearchitektur für Enterprises
 
 ## Aufgabe 1 „Zaghafte erste Glühwürmchen“ 
 
@@ -182,4 +182,15 @@ Im letzten Schritt der Methode getNeighborStates wird die Liste neighbors mit de
 
 Das sieht so aus:
 
+https://github.com/user-attachments/assets/e2795918-62e7-4ca4-a207-decdb732a238
 
+### Überraschendes
+
+Vielleicht nicht überraschend für erfahrene Programmierer, aber überraschend für mich war, dass ab einer bestimmten Anzahl (bei mir ab 7) es zu Problemen mit der Serverconnection kam. Ich vermute Raceconditions bei den Clients. Das Ergebnis ist ein lückenhaftes Grid.
+
+
+https://github.com/user-attachments/assets/358aaa67-02dd-4f4b-8b06-e4d16446a3b5
+
+Versuche das ganze zu korrigieren mit mehrfachen oder verzögerten Verbindungsversuchen hat dazu geführt, dass kein synchrones Bild mehr entstanden ist, sondern die Würmchen in Wellen geleuchtet haben. Eine kurze Verzögerung bei der Initialisierung scheint dafür zu sorgen. 
+
+Ein Lönsungsansatz dafür wäre die Glühwürmchen erst starten zu lassen, wenn alle Clienten verbunden sind.
