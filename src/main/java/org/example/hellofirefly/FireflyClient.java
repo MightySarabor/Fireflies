@@ -8,7 +8,7 @@ import java.util.Random;
 public class FireflyClient implements Runnable {
 
     // Parameter für einfache Anpassungen
-    private static final long SLEEP_TIME = 30; // Kürzere Wartezeit, um schneller zu blinken
+    private static final long SLEEP_TIME = 60; // Kürzere Wartezeit, um schneller zu blinken
     private static final double ADJUSTMENT_FACTOR = 0.2; // Erhöhter Anpassungsfaktor für schnellere Synchronisation
     private static final double PERIOD = 1.0; // Beispielwert für die Periode
     private static final double TIME_STEP = 0.1; // Zeitschritt für die Phasenaktualisierung
@@ -31,42 +31,32 @@ public class FireflyClient implements Runnable {
 
     @Override
     public void run() {
-        boolean connected = false;
-        while (!connected) {
-            try (TTransport transport = new TSocket("localhost", 9090)) {
-                transport.open();
-                connected = true;
-                FireflyService.Client client = new FireflyService.Client(new TBinaryProtocol(transport));
+        try (TTransport transport = new TSocket("localhost", 9090)) {
+            transport.open();
+            FireflyService.Client client = new FireflyService.Client(new TBinaryProtocol(transport));
 
-                while (true) {
-                    // Zustände der Nachbarn abfragen
-                    int[] neighborStates = client.getNeighborStates(gridX, gridY).stream().mapToInt(Integer::intValue).toArray();
+            while (true) {
+                // Zustände der Nachbarn abfragen
+                int[] neighborStates = client.getNeighborStates(gridX, gridY).stream().mapToInt(Integer::intValue).toArray();
 
-                    // Phasenberechnung
-                    if (neighborStates.length > 0) {
-                        phase = updatePhase(neighborStates, phase);
-                    } else {
-                        System.out.println("Keine Nachbarn gefunden für Client " + clientId);
-                    }
-
-                    // Neuen Zustand an den Server senden
-                    client.sendState(clientId, phaseToState(phase));
-                    // System.out.println("Client " + clientId + " sent phase: " + phase);
-
-                    // Wartezeit entsprechend der SLEEP_TIME
-                    Thread.sleep(SLEEP_TIME);
+                // Phasenberechnung
+                if (neighborStates.length > 0) {
+                    phase = updatePhase(neighborStates, phase);
+                } else {
+                    System.out.println("Keine Nachbarn gefunden für Client " + clientId);
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-                try {
-                    Thread.sleep(1000); // 1 Sekunde warten, bevor erneut versucht wird
-                } catch (InterruptedException ie) {
-                    ie.printStackTrace();
-                }
+
+                // Neuen Zustand an den Server senden
+                client.sendState(clientId, phaseToState(phase));
+                // System.out.println("Client " + clientId + " sent phase: " + phase);
+
+                // Wartezeit entsprechend der SLEEP_TIME
+                Thread.sleep(SLEEP_TIME);
             }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
-
 
     private double updatePhase(int[] neighborStates, double currentPhase) {
         // Regelmäßige Phasenänderung
@@ -93,7 +83,7 @@ public class FireflyClient implements Runnable {
             currentPhase -= 2 * Math.PI;
         }
 
-       // System.out.println("Client " + clientId + " aktuelle Phase: " + currentPhase + ", Anpassung: " + adjustment);
+        // System.out.println("Client " + clientId + " aktuelle Phase: " + currentPhase + ", Anpassung: " + adjustment);
         return currentPhase;
     }
 

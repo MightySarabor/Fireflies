@@ -21,11 +21,6 @@ public class ClientHandler {
         // Starte jeden Client in einem eigenen Thread
         for (FireflyClient client : clients) {
             new Thread(client).start();
-            try {
-                Thread.sleep(10); // 10 Millisekunden Verzögerung
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
         }
     }
 
