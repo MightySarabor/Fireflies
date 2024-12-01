@@ -21,12 +21,18 @@ public class ClientHandler {
         // Starte jeden Client in einem eigenen Thread
         for (FireflyClient client : clients) {
             new Thread(client).start();
+            try {
+                Thread.sleep(10); // 10 Millisekunden Verzögerung
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 
+
     public static void main(String[] args) {
         // ClientHandler mit 9 Clients (3x3 Gitter)
-        ClientHandler handler = new ClientHandler(36);
+        ClientHandler handler = new ClientHandler(100);
         handler.startClients();
     }
 }

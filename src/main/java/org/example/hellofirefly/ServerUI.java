@@ -18,8 +18,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ServerUI extends Application {
 
-    private static final int GRID_SIZE = 6; // Größe des Gitters
-    private static final int CELL_SIZE = 30; // Größe der Zellen
+    private static final int GRID_SIZE = 10; // Größe des Gitters
+    private static final int CELL_SIZE = 65; // Größe der Zellen
     private final ConcurrentHashMap<Integer, Integer> clientStates = new ConcurrentHashMap<>();
     private final Circle[][] grid = new Circle[GRID_SIZE][GRID_SIZE];
 
@@ -52,7 +52,9 @@ public class ServerUI extends Application {
             try {
                 FireflyService.Processor<FireflyHandler> processor = new FireflyService.Processor<>(new FireflyHandler());
                 TServerTransport serverTransport = new TServerSocket(9090);
-                TThreadPoolServer.Args serverArgs = new TThreadPoolServer.Args(serverTransport);
+                TThreadPoolServer.Args serverArgs = new TThreadPoolServer.Args(serverTransport)
+                        .minWorkerThreads(10)
+                        .maxWorkerThreads(200); // Anpassen je nach Bedarf
                 serverArgs.processor(processor);
                 TServer server = new TThreadPoolServer(serverArgs);
 
@@ -63,6 +65,7 @@ public class ServerUI extends Application {
             }
         }).start();
     }
+
 
     private class FireflyHandler implements FireflyService.Iface {
         @Override
