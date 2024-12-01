@@ -14,33 +14,13 @@ Aufleuchtzyklus jedes Glühwürmchens darzustellen.
 
 Die Abgabe den Code der ersten Aufgabe finden Sie im Master-Branch.
 
-
-
 ### Die Reise des Glühwürmchens
 
-Das Glühwürmchen wird mit festen Parametern erstellt, die für die Synchronisation entscheidend sind. Die Phase wird zufällig initialisiert, um Varianz in das Experiment zu bringen:
+Die Klasse FireflySimulation bildet das Herzstück des Programms und stellt die Glühwürmchen in einem Grid jeweils als Feld dar, das blinkt oder nicht.
+Jedes Feld führt ist ein Glühwürmchen und führt dessen Methoden aus, um festzustellen, ob es aktuell blinken muss oder nicht. Das wird anhand der Phase, einem Wert zwischen 0 und 2 Pi und einem Schwellwert gemacht.
+Wenn das Glühwürmchen erstellt wird, startet es in einer zufälligen Phase, damit garantieren wir etwas Varianz, wenn wir das Programm starten. Außerdem hat jedes Glühwürmchen eine Liste mit Nachbarn
 
-```java
-this.phase = new Random().nextDouble() * 2 * Math.PI;  // Zufällige Startphase zwischen 0 und 2π
-```
-
-Verbindung zum Server
-Das Glühwürmchen stellt eine Verbindung zum Server her:
-
-```java
-try (TTransport transport = new TSocket("localhost", 9090)) {
-    transport.open();
-    FireflyService.Client client = new FireflyService.Client(new TBinaryProtocol(transport));
-```
-Synchronisation und Phasenanpassung
-Das Glühwürmchen geht dann in eine Endlosschleife, in der es sich mit der Zeit mit den anderen Glühwürmchen synchronisiert. Zunächst fragt es die Zustände seiner Nachbarn ab:
-
-```java
-int[] neighborStates = client.getNeighborStates(gridX, gridY).stream().mapToInt(Integer::intValue).toArray();
-```
-Die Methode getNeighborStates ist eine Methode der Schnittstelle, die mit Apache Thrift erstellt wurde.
-
-Mit den Informationen über die Nachbarn kann das Glühwürmchen jetzt die Berechnung durchführen, um seine eigene Phase anzupassen.
+In jeder Iteration haben wir einen Phasenfortschritt. 
 
 Phasenfortschritt
 ```java
@@ -49,26 +29,23 @@ if (currentPhase >= 2 * Math.PI) {
     currentPhase -= 2 * Math.PI;
 }
 ```
-Dieser Abschnitt beschreibt den regelmäßigen Phasenfortschritt:
-
 PERIOD bestimmt die Geschwindigkeit der Phasenänderung. Eine kleinere PERIOD führt zu einer schnelleren Phasenänderung, während eine größere PERIOD zu einer langsameren Phasenänderung führt.
 
 TIME_STEP bestimmt die Granularität der Aktualisierung. Ein kleinerer TIME_STEP führt zu feineren Phasenänderungen, während ein größerer TIME_STEP zu gröberen Phasenänderungen führt.
 
 Sobald die Phase den Wert 2 * π überschreitet, wird sie zurückgesetzt, um im Bereich [0, 2π] zu bleiben.
 
-Anpassung basierend auf Nachbarn
+Nach Phasenfortschritt wird die Phase weiterhin leicht angepasst. Der Anpassungsfaktor kann mit ADJUSTMENT_FACTOR gesetzt werden. Je höher, desto schnellere Anpassung.
+
 ```java
 // Synchronisation mit Nachbarn
 double phaseAdjustment = 0.0;
-for (int state : neighborStates) {
-    double neighborPhase = stateToPhase(state);
-    phaseAdjustment += Math.sin(neighborPhase - currentPhase);
-    //System.out.println("Nachbar Zustand: " + state + ", Phase: " + neighborPhase);
-}
+        for (Firefly neighbor : neighbors) {
+            phaseAdjustment += Math.sin(neighbor.phase - this.phase);
+        }
 
-double adjustment = ADJUSTMENT_FACTOR * (phaseAdjustment / neighborStates.length);
-currentPhase += adjustment;
+        phaseAdjustment *= syncRate / neighbors.size();
+        this.phase += ADJUSTMENT_FACTOR * phaseAdjustment / neighbors.size();
 ```
 In diesem Abschnitt:
 
@@ -84,17 +61,13 @@ Die berechnete Anpassung wird dann zur aktuellen Phase addiert.
 
 Damit verändert sich die Phase des Glühwürmchens kontinuierlich in Abhängigkeit von den Phasen der Nachbarn.
 
-Sicherstellung der Phasengrenzen
-```java
-if (currentPhase < 0) {
-    currentPhase += 2 * Math.PI;
-} else if (currentPhase >= 2 * Math.PI) {
-    currentPhase -= 2 * Math.PI;
-}
-```
+Hier checkt das Glühwürmchen, ob es aktuell Blinken soll. Mit flashTimeRemaining leuchtet es ungeachtet der Phase weiter. 
 
-Zum Schluss wird sichergestellt, dass die Phase des Glühwürmchens innerhalb der Grenzen [0, 2π] bleibt. Dies stellt sicher, dass die Phasenwerte immer im gültigen Bereich liegen.
+### Beispiel
 
+So sieht das ganze dann aus:
+
+https://github.com/user-attachments/assets/2f827170-6169-4153-8c73-86d2c0d5fbe3
 
 ## Aufgabe 2 „Kommunizierende Glühwürmchen“  
 
@@ -107,9 +80,11 @@ erreichen. Wenn Sie die Programmiersprache Java verwenden, ist alternativ auch J
 zulässig. Die Aufgabe besteht darin, die dezentrale Natur der Simulation zu verdeutlichen und sicherzustellen, dass die 
 Glühwürmchen auf Basis der empfangenen Informationen den Synchronisationsprozess wie zuvor initiieren können. 
 
+Den Code finden Sie im Brach test
+
 Für die verteilte Struktur habe ich mir folgdenes überlegt:
 
-Ich habe einen zentralen Server 'ServerUI'. Dann habe ich Die Glühwürmchen, ein Glühwürmchen ist ein 'FireflyClient'. Dann habe ich den 'ClientHandler', dieser startet lediglich die FireflyClients. Und zu guter letzt habe ich mit Apache Thrift einen FireflyService erstellt, der ein Framework für die verteilte Struktur liefert.
+Ich habe einen zentralen Server 'ServerUI'. Dann habe ich Die Glühwürmchen, ein Glühwürmchen ist ein 'FireflyClient'. Dann habe ich den 'ClientHandler', dieser startet lediglich die FireflyClients. Und zu guter letzt habe ich mit Apache Thrift einen FireflyService erstellt, der ein Framework für die verteilte Struktur liefert. 
 
 Als UML Diagramm sehen die Klassen wie folgt aus:
 ```
@@ -152,6 +127,8 @@ Als UML Diagramm sehen die Klassen wie folgt aus:
 
 ### Kommunikation mit dem Server
 
+Die Grundidee für das Glühwürmchen ist die gleiche. Nur anstatt, dass jedes Feld ein eigenes Glühwürmchen ist und zentral von einer Klasse ausgeführt werden, ist jedes Glühwürmchen nun sein eigener Prozess, der unabhängig von der UI läuft. Das Glühwürmchen meldet sich einmal an und geht dann auf die Reise. Neue Phasen werden jede Iteration an den Server verschickt, der sich die Phase jedes Glühwürmchens merkt. Das Glühwürmchen kann dann seine Nachbarn vom Server abfragen. Was musste grundlegend geändert werden vom Monolithen?
+
 Für die Kommunikation zwischen Server und Client wurden in Apache Thrift zwei zentrale Methoden definiert:
 
 ```java
@@ -163,9 +140,15 @@ service FireflyService {
 }```
 Diese Methoden sind notwendig, um den Server über den aktuellen Zustand der Glühwürmchen auf dem Laufenden zu halten und dem Glühwürmchen den Zugriff auf die Zustände seiner Nachbarn zu ermöglichen. Der Server speichert die Zustände der Glühwürmchen in einer ConcurrentHashMap.
 
+Verbindung zum Server
+Das Glühwürmchen stellt eine Verbindung zum Server her:
+
 ```java
-private final ConcurrentHashMap<Integer, Integer> clientStates = new ConcurrentHashMap<>();
+try (TTransport transport = new TSocket("localhost", 9090)) {
+    transport.open();
+    FireflyService.Client client = new FireflyService.Client(new TBinaryProtocol(transport));
 ```
+
 Die Methode getNeighborStates, die vom Glühwürmchen aufgerufen wird, ist im FireflyHandler definiert:
 
 ```java
@@ -196,3 +179,7 @@ return neighbors;
 }
 ```
 Im letzten Schritt der Methode getNeighborStates wird die Liste neighbors mit den Zuständen der Nachbarn gefüllt. Diese Zustände werden vom Glühwürmchen mit getNeighborStates abgefragt, um die eigene Phase basierend auf den Zuständen der Nachbarn anzupassen.
+
+Das sieht so aus:
+
+
